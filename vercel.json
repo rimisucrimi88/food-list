@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "",
-  "outputDirectory": "modeling/product-manager",
+  "buildCommand": "mkdir -p public && cp modeling/product-manager/index.html public/index.html",
+  "outputDirectory": "public",
   "rewrites": [
     { "source": "/config.js", "destination": "/api/config" }
   ]
