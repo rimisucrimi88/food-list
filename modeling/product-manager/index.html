@@ -183,13 +183,28 @@ const localApi = {
 
 // 서버 쓰기 모드: 추가·삭제를 로컬 서버(server.js)가 service role 키로 처리한다
 const viaServer = !!cfg.WRITE_VIA_SERVER;
+// 공유 비밀번호: 배포 서버(Vercel)에서만 쓴다. 탭을 닫으면 잊는다
+function getPassword() {
+  if (!cfg.NEED_PASSWORD) return '';
+  let pw = '';
+  try { pw = sessionStorage.getItem('pm_pw') || ''; } catch { /* 저장 불가 시 매번 묻는다 */ }
+  if (!pw) {
+    pw = window.prompt('추가·삭제 비밀번호를 입력하세요') || '';
+    if (!pw) throw new Error('비밀번호를 입력해야 추가·삭제할 수 있습니다');
+    try { sessionStorage.setItem('pm_pw', pw); } catch { /* 무시 */ }
+  }
+  return pw;
+}
 async function serverCall(method, url, body) {
+  const headers = { 'Content-Type': 'application/json', 'X-Requested-With': 'product-manager' };
+  if (cfg.NEED_PASSWORD) headers['X-App-Password'] = getPassword();
   const res = await fetch(url, {
     method,
-    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'product-manager' },
+    headers,
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const data = await res.json().catch(() => ({}));
+  if (res.status === 401) { try { sessionStorage.removeItem('pm_pw'); } catch { /* 무시 */ } }
   if (!res.ok) {
     const e = new Error(data.message || ('서버 오류 ' + res.status));
     e.hint = data.hint; e.code = data.code;
@@ -563,7 +578,7 @@ function App() {
       <header className="top">
         <h1>상품 관리</h1>
         {useSupabase
-          ? <span className="mode live">{viaServer ? 'Supabase 연결 · 쓰기는 로컬 서버' : 'Supabase 연결'}</span>
+          ? <span className="mode live">{viaServer ? 'Supabase 연결 · 쓰기는 서버(비밀번호)' : 'Supabase 연결'}</span>
           : <span className="mode demo">데모 모드 · 이 브라우저에만 저장</span>}
       </header>
 

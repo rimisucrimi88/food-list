@@ -73,6 +73,9 @@
    | `SUPABASE_URL` | `https://<프로젝트>.supabase.co` | Supabase 대시보드 -> Project Settings -> API -> Project URL |
    | `SUPABASE_ANON_KEY` | anon public 키 | 같은 화면 -> Project API keys -> anon public |
    | `SUPABASE_SERVICE_ROLE_KEY` | service_role 키 | 같은 화면 -> service_role (Reveal 클릭) |
+   | `APP_PASSWORD` | 추가 · 삭제용 공유 비밀번호 (직접 정한다, 12자 이상 권장) | 직접 만든다. 팀원에게만 알려 준다 |
+
+   `APP_PASSWORD`가 비어 있으면 추가 · 삭제는 막힌다(조회만 된다). 서버리스 함수는 저장소의 `api/` 폴더에 있다
 
 3. 키 값은 **채팅이나 문서에 붙여넣지 않는다.** Vercel 입력칸에만 넣는다
 4. `.env.local` 파일을 칸 위로 끌어다 놓으면 한꺼번에 채워지기도 하지만, 값이 맞는지 확인한 뒤 **Add**를 누른다

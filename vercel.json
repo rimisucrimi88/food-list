@@ -1,5 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "",
-  "outputDirectory": "modeling/product-manager"
+  "outputDirectory": "modeling/product-manager",
+  "rewrites": [
+    { "source": "/config.js", "destination": "/api/config" }
+  ]
 }
