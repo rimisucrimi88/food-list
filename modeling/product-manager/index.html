@@ -1,0 +1,658 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>상품 관리</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: #f6f6f3; --surface: #ffffff; --text: #1f2328; --muted: #667085; --line: #e2e2da;
+  --accent: #2f6f5e; --accent-ink: #ffffff; --accent-soft: #e3efe9;
+  --danger: #b3261e; --danger-ink: #ffffff; --red-soft: #fde8e6; --red-ink: #8c1d13;
+  --amber-soft: #fdf0d5; --amber-ink: #7a4b00;
+  --miss-soft: #f5f5dc; --miss-ink: #5f5f2e;
+  --ok-soft: #e4f1ea; --ok-ink: #1f5a3d;
+  --shadow: 0 8px 30px rgba(0, 0, 0, .18);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16181a; --surface: #1f2326; --text: #e8eaed; --muted: #9aa3ad; --line: #323840;
+    --accent: #5fb89f; --accent-ink: #0f1a16; --accent-soft: #1f3a31;
+    --danger: #f2766d; --danger-ink: #1c0b0a; --red-soft: #3c1f1d; --red-ink: #f5a59e;
+    --amber-soft: #3b2f12; --amber-ink: #f0c674;
+    --miss-soft: #35351f; --miss-ink: #d6d68f;
+    --ok-soft: #1d3328; --ok-ink: #8fd1ae;
+    --shadow: 0 8px 30px rgba(0, 0, 0, .6);
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, "Malgun Gothic", sans-serif; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 20px 16px 48px; }
+header.top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 14px; }
+header.top h1 { font-size: 21px; margin: 0; }
+.mode { font-size: 12.5px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); }
+.mode.live { background: var(--ok-soft); color: var(--ok-ink); border-color: transparent; }
+.mode.demo { background: var(--amber-soft); color: var(--amber-ink); border-color: transparent; }
+.banner { border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; font-size: 14px; display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; }
+.banner.info { background: var(--amber-soft); color: var(--amber-ink); }
+.banner.ok { background: var(--ok-soft); color: var(--ok-ink); }
+.banner.err { background: var(--red-soft); color: var(--red-ink); }
+.banner button { background: none; border: 0; color: inherit; cursor: pointer; font-size: 16px; line-height: 1; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+.toolbar .grow { flex: 1 1 240px; }
+input[type=text], input[type=number], select, textarea {
+  width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--surface); color: var(--text); font: inherit;
+}
+textarea { resize: vertical; min-height: 64px; }
+input:focus, select:focus, textarea:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.toolbar select { width: auto; }
+.btn { padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: inherit; cursor: pointer; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.danger { background: var(--danger); color: var(--danger-ink); border-color: var(--danger); }
+.btn.ghost { border-color: transparent; background: transparent; }
+.btn.sm { padding: 4px 10px; font-size: 13px; }
+.btn[disabled] { opacity: .55; cursor: not-allowed; }
+.count { color: var(--muted); font-size: 13.5px; margin: 2px 2px 8px; }
+.tablebox { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+table.tbl { width: 100%; border-collapse: collapse; min-width: 760px; }
+.tbl th, .tbl td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.tbl th { font-size: 12.5px; color: var(--muted); font-weight: 600; background: var(--bg); white-space: nowrap; }
+.tbl td.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tbl th.num { text-align: right; }
+.tbl tr:last-child td { border-bottom: 0; }
+.tbl tr.open > td { background: var(--accent-soft); }
+.code { font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; }
+.namebtn { background: none; border: 0; padding: 0; font: inherit; font-weight: 600; color: var(--text); cursor: pointer; text-align: left; }
+.namebtn:hover { color: var(--accent); text-decoration: underline; }
+.badges { display: flex; flex-wrap: wrap; gap: 4px; }
+.badge { font-size: 12px; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.badge.red { background: var(--red-soft); color: var(--red-ink); }
+.badge.amber { background: var(--amber-soft); color: var(--amber-ink); }
+.badge.miss { background: var(--miss-soft); color: var(--miss-ink); }
+.badge.ok { background: var(--ok-soft); color: var(--ok-ink); }
+.miss { background: var(--miss-soft); color: var(--miss-ink); padding: 1px 8px; border-radius: 6px; font-size: 13px; }
+.detail td { background: var(--surface); }
+.dgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px 20px; }
+.dgrid .k { font-size: 12.5px; color: var(--muted); }
+.dgrid .v { word-break: keep-all; }
+.sub { margin-top: 14px; font-size: 13px; color: var(--muted); font-weight: 600; }
+table.mini { border-collapse: collapse; margin-top: 6px; font-size: 14px; }
+.mini th, .mini td { padding: 4px 14px 4px 0; text-align: left; border: 0; background: none; }
+.empty { padding: 36px 12px; text-align: center; color: var(--muted); }
+.overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, .45); display: flex; align-items: flex-start; justify-content: center; padding: 28px 12px; overflow-y: auto; z-index: 10; }
+.modal { background: var(--surface); border-radius: 12px; box-shadow: var(--shadow); width: 100%; max-width: 460px; padding: 18px 20px 20px; }
+.modal.wide { max-width: 760px; }
+.mhead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.mhead h2 { font-size: 18px; margin: 0; }
+.actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+.formgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field.wide { grid-column: 1 / -1; }
+.lbl { font-size: 13px; color: var(--muted); font-weight: 600; }
+.req { color: var(--danger); margin-left: 2px; }
+.err { color: var(--danger); font-size: 12.5px; }
+.section { grid-column: 1 / -1; margin: 10px 0 0; padding-top: 12px; border-top: 1px solid var(--line); font-size: 13px; font-weight: 700; color: var(--accent); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; align-self: flex-start; }
+.segbtn { padding: 5px 12px; background: var(--surface); color: var(--text); border: 0; border-right: 1px solid var(--line); font: inherit; font-size: 13.5px; cursor: pointer; }
+.segbtn:last-child { border-right: 0; }
+.segbtn.on { background: var(--accent); color: var(--accent-ink); }
+.inline2 { display: grid; grid-template-columns: 1fr 90px; gap: 8px; }
+.srow { display: grid; grid-template-columns: 110px 90px 90px 1fr auto; gap: 8px; align-items: start; margin-bottom: 8px; grid-column: 1 / -1; }
+.check { display: flex; gap: 8px; align-items: center; font-size: 14px; }
+@media (max-width: 640px) {
+  .formgrid { grid-template-columns: 1fr; }
+  .srow { grid-template-columns: 1fr 1fr; }
+  .srow .note { grid-column: 1 / -1; }
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.26.4/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useMemo } = React;
+
+const UNITS = ['g', 'kg', 'ml'];
+const CONDITIONS = ['미개봉', '개봉후', '냉장', '상온', '냉동'];
+const DURATION_UNITS = ['일', '주', '개월'];
+// NULL(미기재)을 허용하는 항목: [키, 라벨, '없음' 선택 허용 여부]
+const NULLABLE = [
+  ['pack_info', '구성', false],
+  ['origin', '원산지', false],
+  ['storage_prohibition', '보관금지사항', true],
+  ['allergens', '알레르기물질', true],
+  ['cross_contamination', '교차오염주의', true],
+  ['usage_guide', '사용법', false],
+  ['caution', '주의사항', true],
+];
+const nullableMeta = Object.fromEntries(NULLABLE.map(([k, l, n]) => [k, { label: l, allowNone: n }]));
+
+// ---------- 데이터 계층: Supabase 또는 브라우저 저장(데모) ----------
+const cfg = window.APP_CONFIG || {};
+const useSupabase = !!(cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY);
+const sb = useSupabase ? window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY) : null;
+
+// 데모용 예시 데이터: 실습 문서와 무관한 임의의 값
+const DEMO_ROWS = [
+  { product_code: 'P-9001', name: '샘플 땅콩과자', price_krw: 3500, size_value: 80, size_unit: 'g', pack_info: null,
+    description: '데모용 샘플 상품', origin: '국내산', ingredients: '밀가루, 땅콩', storage_method: '서늘한 곳에 보관',
+    storage_prohibition: '냉장 금지', allergens: '밀, 땅콩', cross_contamination: null, usage_guide: null, caution: null,
+    source_doc: '(데모)', is_dummy: true,
+    storage_conditions: [{ condition: '미개봉', duration_value: 6, duration_unit: '개월', note: '유통기한' }] },
+  { product_code: 'P-9002', name: '샘플 사과즙', price_krw: 12000, size_value: 70, size_unit: 'ml', pack_info: '30포',
+    description: '데모용 샘플 상품', origin: '국내산', ingredients: '사과, 정제수', storage_method: '서늘한 곳에 보관',
+    storage_prohibition: null, allergens: '없음', cross_contamination: null, usage_guide: '하루 1포', caution: null,
+    source_doc: '(데모)', is_dummy: true,
+    storage_conditions: [{ condition: '개봉후', duration_value: 1, duration_unit: '일', note: '당일 섭취' }] },
+  { product_code: 'P-9003', name: '샘플 쿠키', price_krw: 5200, size_value: 120, size_unit: 'g', pack_info: '6개',
+    description: '데모용 샘플 상품', origin: null, ingredients: '밀가루, 버터', storage_method: '밀봉해 상온 보관',
+    storage_prohibition: null, allergens: null, cross_contamination: '우유 생산 라인 공유', usage_guide: null, caution: '습기에 약함',
+    source_doc: '(데모)', is_dummy: true, storage_conditions: [] },
+];
+const LS_KEY = 'product-manager-demo-v1';
+let memoryRows = null;
+function readLocal() {
+  if (memoryRows) return memoryRows;
+  try { const raw = localStorage.getItem(LS_KEY); if (raw) memoryRows = JSON.parse(raw); } catch (e) { /* 저장소를 못 쓰면 메모리만 사용 */ }
+  if (!memoryRows) memoryRows = JSON.parse(JSON.stringify(DEMO_ROWS));
+  return memoryRows;
+}
+function writeLocal(rows) {
+  memoryRows = rows;
+  try { localStorage.setItem(LS_KEY, JSON.stringify(rows)); } catch (e) { /* 무시 */ }
+}
+
+const localApi = {
+  async list() { return JSON.parse(JSON.stringify(readLocal())).sort((a, b) => a.product_code.localeCompare(b.product_code)); },
+  async add(product, storage) {
+    const rows = readLocal().slice();
+    rows.push({ ...product, storage_conditions: storage.map(s => ({ ...s })) });
+    writeLocal(rows);
+  },
+  async remove(code) { writeLocal(readLocal().filter(r => r.product_code !== code)); },
+};
+
+// 서버 쓰기 모드: 추가·삭제를 로컬 서버(server.js)가 service role 키로 처리한다
+const viaServer = !!cfg.WRITE_VIA_SERVER;
+async function serverCall(method, url, body) {
+  const res = await fetch(url, {
+    method,
+    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'product-manager' },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const e = new Error(data.message || ('서버 오류 ' + res.status));
+    e.hint = data.hint; e.code = data.code;
+    throw e;
+  }
+  return data;
+}
+
+const supabaseApi = {
+  async list() {
+    const { data, error } = await sb.from('products').select('*, storage_conditions(*)').order('product_code');
+    if (error) throw error;
+    return data;
+  },
+  async add(product, storage) {
+    if (viaServer) { await serverCall('POST', '/api/products', { product, storage }); return; }
+    const { error } = await sb.from('products').insert(product);
+    if (error) throw error;
+    if (storage.length) {
+      const rows = storage.map(s => ({ ...s, product_code: product.product_code }));
+      const { error: e2 } = await sb.from('storage_conditions').insert(rows);
+      if (e2) {
+        // 보관조건 저장에 실패하면 방금 넣은 상품도 되돌린다
+        await sb.from('products').delete().eq('product_code', product.product_code);
+        throw e2;
+      }
+    }
+  },
+  async remove(code) {
+    if (viaServer) { await serverCall('DELETE', '/api/products/' + encodeURIComponent(code)); return; }
+    const { data, error } = await sb.from('products').delete().eq('product_code', code).select('product_code');
+    if (error) throw error;
+    // RLS 정책이 없으면 오류 없이 0건이 삭제된다
+    if (!data || data.length === 0) throw new Error('삭제되지 않았습니다. 삭제 정책(supabase_local_policies.sql)을 확인하세요');
+  },
+};
+const api = useSupabase ? supabaseApi : localApi;
+
+// ---------- 유틸 ----------
+const msg = e => {
+  if (!e) return '알 수 없는 오류';
+  const parts = [e.message || String(e)];
+  if (e.hint) parts.push('힌트: ' + e.hint);
+  if (e.code) parts.push('코드: ' + e.code);
+  return parts.join(' / ');
+};
+const won = n => Number(n).toLocaleString('ko-KR') + '원';
+const hasDirect = p => !!p.allergens && p.allergens !== '없음';
+const hasCross = p => !!p.cross_contamination;
+const sizeText = p => Number(p.size_value) + p.size_unit;
+const SEARCH_KEYS = ['product_code', 'name', 'description', 'origin', 'ingredients', 'allergens', 'cross_contamination',
+  'storage_method', 'storage_prohibition', 'usage_guide', 'caution', 'pack_info'];
+
+function Val({ v }) { return v == null || v === '' ? <span className="miss">미기재</span> : <span>{v}</span>; }
+function Badge({ kind, title, children }) { return <span className={'badge ' + kind} title={title}>{children}</span>; }
+
+function AllergyBadges({ p }) {
+  const out = [];
+  if (hasDirect(p)) out.push(<Badge key="d" kind="red">직접 · {p.allergens}</Badge>);
+  if (hasCross(p)) out.push(<Badge key="c" kind="amber" title={p.cross_contamination}>교차오염</Badge>);
+  if (p.allergens == null) out.push(<Badge key="m" kind="miss">알레르기 미기재</Badge>);
+  if (p.allergens === '없음') out.push(<Badge key="n" kind="ok">직접 없음</Badge>);
+  return <div className="badges">{out}</div>;
+}
+
+function Modal({ title, onClose, children, wide, backdropClose }) {
+  useEffect(() => {
+    const h = e => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [onClose]);
+  return (
+    <div className="overlay" onMouseDown={e => { if (backdropClose && e.target === e.currentTarget) onClose(); }}>
+      <div className={'modal' + (wide ? ' wide' : '')} role="dialog" aria-modal="true" aria-label={title}>
+        <div className="mhead">
+          <h2>{title}</h2>
+          <button type="button" className="btn ghost sm" onClick={onClose} aria-label="닫기">✕</button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ---------- 추가 폼 ----------
+const newForm = () => ({
+  product_code: '', name: '', price_krw: '', size_value: '', size_unit: 'g',
+  description: '', ingredients: '', storage_method: '', source_doc: '', is_dummy: true,
+  ...Object.fromEntries(NULLABLE.map(([k]) => [k, { mode: 'miss', text: '' }])),
+  storage: [],
+});
+const nv = f => (f.mode === 'miss' ? null : f.mode === 'none' ? '없음' : f.text.trim());
+
+function validate(f, existingCodes) {
+  const e = {};
+  const code = f.product_code.trim();
+  if (!/^P-\d{4}$/.test(code)) e.product_code = 'P- 뒤에 숫자 4자리 (예: P-0501)';
+  else if (existingCodes.includes(code)) e.product_code = '이미 있는 상품코드입니다';
+  if (!f.name.trim()) e.name = '필수 항목입니다';
+  const price = Number(f.price_krw);
+  if (f.price_krw === '' || !Number.isInteger(price) || price < 0 || price > 2147483647) e.price_krw = '0 이상의 정수';
+  const sv = Number(f.size_value);
+  if (f.size_value === '' || !(sv > 0) || sv > 999999.99) e.size_value = '0보다 큰 숫자';
+  ['description', 'ingredients', 'storage_method', 'source_doc'].forEach(k => { if (!f[k].trim()) e[k] = '필수 항목입니다'; });
+  NULLABLE.forEach(([k]) => { if (f[k].mode === 'text' && !f[k].text.trim()) e[k] = '내용을 입력하거나 미기재를 선택하세요'; });
+  const seen = new Set();
+  const se = f.storage.map(s => {
+    const er = {};
+    const dv = Number(s.duration_value);
+    if (s.duration_value === '' || !Number.isInteger(dv) || dv <= 0) er.duration_value = '1 이상의 정수';
+    if (seen.has(s.condition)) er.condition = '조건이 중복됩니다';
+    seen.add(s.condition);
+    return er;
+  });
+  if (se.some(x => Object.keys(x).length)) e.storage = se;
+  return e;
+}
+const toPayload = f => ({
+  product_code: f.product_code.trim(), name: f.name.trim(), price_krw: Number(f.price_krw),
+  size_value: Number(f.size_value), size_unit: f.size_unit,
+  pack_info: nv(f.pack_info), description: f.description.trim(), origin: nv(f.origin),
+  ingredients: f.ingredients.trim(), storage_method: f.storage_method.trim(),
+  storage_prohibition: nv(f.storage_prohibition), allergens: nv(f.allergens),
+  cross_contamination: nv(f.cross_contamination), usage_guide: nv(f.usage_guide), caution: nv(f.caution),
+  source_doc: f.source_doc.trim(), is_dummy: f.is_dummy,
+});
+const toStorage = f => f.storage.map(s => ({
+  condition: s.condition, duration_value: Number(s.duration_value), duration_unit: s.duration_unit, note: s.note.trim() || null,
+}));
+
+function Field({ label, req, error, wide, children }) {
+  return (
+    <label className={'field' + (wide ? ' wide' : '')}>
+      <span className="lbl">{label}{req && <b className="req">*</b>}</span>
+      {children}
+      {error && <span className="err">{error}</span>}
+    </label>
+  );
+}
+
+function NullableField({ name, value, onChange, error }) {
+  const { label, allowNone } = nullableMeta[name];
+  const modes = [['miss', '미기재'], ...(allowNone ? [['none', '없음']] : []), ['text', '직접 입력']];
+  return (
+    <div className="field wide" role="group" aria-label={label}>
+      <span className="lbl">{label}</span>
+      <div className="seg">
+        {modes.map(([m, t]) => (
+          <button type="button" key={m} className={'segbtn' + (value.mode === m ? ' on' : '')}
+            aria-pressed={value.mode === m} onClick={() => onChange({ ...value, mode: m })}>{t}</button>
+        ))}
+      </div>
+      {value.mode === 'text' && (
+        <input type="text" value={value.text} aria-label={label + ' 내용'}
+          onChange={e => onChange({ ...value, text: e.target.value })} />
+      )}
+      {error && <span className="err">{error}</span>}
+    </div>
+  );
+}
+
+function AddForm({ existingCodes, onSubmit, onCancel }) {
+  const [f, setF] = useState(newForm);
+  const [errors, setErrors] = useState({});
+  const [busy, setBusy] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const set = (k, v) => setF(prev => ({ ...prev, [k]: v }));
+  const setStorage = (i, patch) => setF(prev => ({ ...prev, storage: prev.storage.map((s, j) => (j === i ? { ...s, ...patch } : s)) }));
+  const addStorage = () => setF(prev => ({ ...prev, storage: [...prev.storage, { condition: '냉장', duration_value: '', duration_unit: '일', note: '' }] }));
+  const delStorage = i => setF(prev => ({ ...prev, storage: prev.storage.filter((_, j) => j !== i) }));
+
+  const submit = async e => {
+    e.preventDefault();
+    const er = validate(f, existingCodes);
+    setErrors(er);
+    if (Object.keys(er).length) return;
+    setBusy(true); setSubmitError('');
+    try { await onSubmit(toPayload(f), toStorage(f)); }
+    catch (err) { setSubmitError(msg(err)); setBusy(false); }
+  };
+
+  const text = (k, label, opts = {}) => (
+    <Field label={label} req={opts.req !== false} error={errors[k]} wide={opts.wide}>
+      <input type="text" value={f[k]} onChange={e => set(k, e.target.value)} placeholder={opts.ph} />
+    </Field>
+  );
+  const nullable = k => <NullableField name={k} value={f[k]} onChange={v => set(k, v)} error={errors[k]} />;
+
+  return (
+    <form onSubmit={submit} noValidate>
+      <div className="formgrid">
+        <div className="section">기본 정보</div>
+        {text('product_code', '상품코드', { ph: 'P-0501' })}
+        {text('name', '상품명')}
+        <Field label="가격(원)" req error={errors.price_krw}>
+          <input type="number" min="0" step="1" value={f.price_krw} onChange={e => set('price_krw', e.target.value)} />
+        </Field>
+        <Field label="용량 · 단위" req error={errors.size_value}>
+          <div className="inline2">
+            <input type="number" min="0" step="any" value={f.size_value} onChange={e => set('size_value', e.target.value)} aria-label="용량값" />
+            <select value={f.size_unit} onChange={e => set('size_unit', e.target.value)} aria-label="단위">
+              {UNITS.map(u => <option key={u}>{u}</option>)}
+            </select>
+          </div>
+        </Field>
+        {nullable('pack_info')}
+        {text('source_doc', '근거문서', { ph: 'P-0501_상품명.md' })}
+        <label className="check field wide">
+          <input type="checkbox" checked={f.is_dummy} onChange={e => set('is_dummy', e.target.checked)} /> 가상 상품 (실습 데이터)
+        </label>
+
+        <div className="section">설명 · 성분</div>
+        <Field label="상품설명" req error={errors.description} wide>
+          <textarea value={f.description} onChange={e => set('description', e.target.value)} />
+        </Field>
+        {text('ingredients', '원재료', { wide: true })}
+        {nullable('origin')}
+
+        <div className="section">보관</div>
+        {text('storage_method', '보관방법', { wide: true })}
+        {nullable('storage_prohibition')}
+
+        <div className="section">알레르기 · 주의</div>
+        {nullable('allergens')}
+        {nullable('cross_contamination')}
+        {nullable('usage_guide')}
+        {nullable('caution')}
+
+        <div className="section">보관조건 (선택)</div>
+        {f.storage.map((s, i) => {
+          const se = (errors.storage && errors.storage[i]) || {};
+          return (
+            <div className="srow" key={i}>
+              <div className="field">
+                <select value={s.condition} onChange={e => setStorage(i, { condition: e.target.value })} aria-label="조건">
+                  {CONDITIONS.map(c => <option key={c}>{c}</option>)}
+                </select>
+                {se.condition && <span className="err">{se.condition}</span>}
+              </div>
+              <div className="field">
+                <input type="number" min="1" step="1" placeholder="기간" value={s.duration_value}
+                  onChange={e => setStorage(i, { duration_value: e.target.value })} aria-label="기간값" />
+                {se.duration_value && <span className="err">{se.duration_value}</span>}
+              </div>
+              <select value={s.duration_unit} onChange={e => setStorage(i, { duration_unit: e.target.value })} aria-label="기간단위">
+                {DURATION_UNITS.map(u => <option key={u}>{u}</option>)}
+              </select>
+              <input className="note" type="text" placeholder="비고 (선택)" value={s.note}
+                onChange={e => setStorage(i, { note: e.target.value })} aria-label="비고" />
+              <button type="button" className="btn sm" onClick={() => delStorage(i)} aria-label="보관조건 삭제">삭제</button>
+            </div>
+          );
+        })}
+        <div className="field wide"><div><button type="button" className="btn sm" onClick={addStorage}>+ 보관조건 추가</button></div></div>
+      </div>
+
+      {Object.keys(errors).length > 0 && <div className="banner err" role="alert" style={{ marginTop: 14 }}>입력값을 확인해 주세요.</div>}
+      {submitError && <div className="banner err" role="alert" style={{ marginTop: 14 }}>{submitError}</div>}
+      <div className="actions">
+        <button type="button" className="btn" onClick={onCancel} disabled={busy}>취소</button>
+        <button type="submit" className="btn primary" disabled={busy}>{busy ? '저장 중…' : '추가'}</button>
+      </div>
+    </form>
+  );
+}
+
+// ---------- 목록 ----------
+function Detail({ p }) {
+  const rows = [
+    ['상품설명', p.description], ['원재료', p.ingredients], ['구성', p.pack_info], ['보관방법', p.storage_method],
+    ['보관금지사항', p.storage_prohibition], ['알레르기물질', p.allergens], ['교차오염주의', p.cross_contamination],
+    ['사용법', p.usage_guide], ['주의사항', p.caution], ['근거문서', p.source_doc], ['가상상품', p.is_dummy ? 'Y' : 'N'],
+  ];
+  const sc = p.storage_conditions || [];
+  return (
+    <>
+      <div className="dgrid">
+        {rows.map(([k, v]) => (<div key={k}><div className="k">{k}</div><div className="v"><Val v={v} /></div></div>))}
+      </div>
+      <div className="sub">보관조건</div>
+      {sc.length === 0 ? <div><span className="miss">미기재</span></div> : (
+        <table className="mini">
+          <thead><tr><th>조건</th><th>기간</th><th>비고</th></tr></thead>
+          <tbody>
+            {sc.map(s => (<tr key={s.condition}><td>{s.condition}</td><td>{s.duration_value}{s.duration_unit}</td><td>{s.note || '-'}</td></tr>))}
+          </tbody>
+        </table>
+      )}
+    </>
+  );
+}
+
+const ALLERGY_FILTERS = [
+  ['all', '알레르기: 전체'], ['any', '알레르기 있음 (직접 · 교차)'], ['direct', '직접 포함'],
+  ['cross', '교차오염'], ['unknown', '알레르기물질 미기재'],
+];
+const ALLERGY_TEST = {
+  all: () => true,
+  any: p => hasDirect(p) || hasCross(p),
+  direct: hasDirect,
+  cross: hasCross,
+  unknown: p => p.allergens == null,
+};
+const SORTS = {
+  code: (a, b) => a.product_code.localeCompare(b.product_code),
+  name: (a, b) => a.name.localeCompare(b.name, 'ko'),
+  priceAsc: (a, b) => a.price_krw - b.price_krw,
+  priceDesc: (a, b) => b.price_krw - a.price_krw,
+};
+
+function App() {
+  const [rows, setRows] = useState(null);
+  const [loadError, setLoadError] = useState('');
+  const [query, setQuery] = useState('');
+  const [allergy, setAllergy] = useState('all');
+  const [sort, setSort] = useState('code');
+  const [openCode, setOpenCode] = useState(null);
+  const [adding, setAdding] = useState(false);
+  const [deleting, setDeleting] = useState(null);
+  const [delBusy, setDelBusy] = useState(false);
+  const [notice, setNotice] = useState(null); // { type: 'ok' | 'err', text }
+
+  const load = async () => {
+    setLoadError('');
+    try { setRows(await api.list()); } catch (e) { setLoadError(msg(e)); setRows([]); }
+  };
+  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    if (!notice || notice.type !== 'ok') return;
+    const t = setTimeout(() => setNotice(null), 4000);
+    return () => clearTimeout(t);
+  }, [notice]);
+
+  const filtered = useMemo(() => {
+    if (!rows) return [];
+    const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+    return rows
+      .filter(p => ALLERGY_TEST[allergy](p))
+      .filter(p => {
+        if (!words.length) return true;
+        const hay = SEARCH_KEYS.map(k => p[k] || '').join(' ').toLowerCase();
+        return words.every(w => hay.includes(w));
+      })
+      .sort(SORTS[sort]);
+  }, [rows, query, allergy, sort]);
+
+  const doAdd = async (product, storage) => {
+    await api.add(product, storage);
+    setAdding(false);
+    setNotice({ type: 'ok', text: `${product.name}(${product.product_code})을 추가했습니다.` });
+    await load();
+  };
+  const doDelete = async () => {
+    setDelBusy(true);
+    try {
+      await api.remove(deleting.product_code);
+      setNotice({ type: 'ok', text: `${deleting.name}(${deleting.product_code})을 삭제했습니다.` });
+      if (openCode === deleting.product_code) setOpenCode(null);
+      setDeleting(null);
+      await load();
+    } catch (e) {
+      setNotice({ type: 'err', text: '삭제하지 못했습니다: ' + msg(e) });
+      setDeleting(null);
+    }
+    setDelBusy(false);
+  };
+  const resetDemo = () => { writeLocal(JSON.parse(JSON.stringify(DEMO_ROWS))); load(); setNotice({ type: 'ok', text: '데모 데이터를 처음 상태로 되돌렸습니다.' }); };
+
+  return (
+    <div className="wrap">
+      <header className="top">
+        <h1>상품 관리</h1>
+        {useSupabase
+          ? <span className="mode live">{viaServer ? 'Supabase 연결 · 쓰기는 로컬 서버' : 'Supabase 연결'}</span>
+          : <span className="mode demo">데모 모드 · 이 브라우저에만 저장</span>}
+      </header>
+
+      {!useSupabase && (
+        <div className="banner info">
+          <span>config.js가 비어 있어 데모 모드로 동작합니다. 예시 데이터 3건이 들어 있고, 추가·삭제해도 Supabase에는 영향이 없습니다.</span>
+          <button type="button" className="btn sm" onClick={resetDemo}>데모 초기화</button>
+        </div>
+      )}
+      {notice && (
+        <div className={'banner ' + notice.type} role={notice.type === 'err' ? 'alert' : 'status'}>
+          <span>{notice.text}</span>
+          <button type="button" onClick={() => setNotice(null)} aria-label="알림 닫기">✕</button>
+        </div>
+      )}
+      {loadError && (
+        <div className="banner err" role="alert">
+          <span>목록을 불러오지 못했습니다: {loadError}</span>
+          <button type="button" className="btn sm" onClick={load}>다시 시도</button>
+        </div>
+      )}
+
+      <div className="toolbar">
+        <input className="grow" type="text" placeholder="검색: 상품명, 코드, 원재료, 원산지, 알레르기… (공백으로 여러 단어)"
+          value={query} onChange={e => setQuery(e.target.value)} aria-label="상품 검색" />
+        <select value={allergy} onChange={e => setAllergy(e.target.value)} aria-label="알레르기 필터">
+          {ALLERGY_FILTERS.map(([v, t]) => <option key={v} value={v}>{t}</option>)}
+        </select>
+        <select value={sort} onChange={e => setSort(e.target.value)} aria-label="정렬">
+          <option value="code">정렬: 상품코드</option><option value="name">정렬: 상품명</option>
+          <option value="priceAsc">정렬: 가격 낮은 순</option><option value="priceDesc">정렬: 가격 높은 순</option>
+        </select>
+        <button type="button" className="btn primary" onClick={() => setAdding(true)}>+ 상품 추가</button>
+      </div>
+      <div className="count" aria-live="polite">{rows ? `${filtered.length} / ${rows.length}건` : '불러오는 중…'}</div>
+
+      <div className="tablebox">
+        <table className="tbl">
+          <thead>
+            <tr><th>코드</th><th>상품명</th><th className="num">가격</th><th>용량</th><th>원산지</th><th>알레르기</th><th></th></tr>
+          </thead>
+          <tbody>
+            {rows && filtered.length === 0 && (
+              <tr><td colSpan="7" className="empty">{rows.length === 0 ? '등록된 상품이 없습니다.' : '조건에 맞는 상품이 없습니다.'}</td></tr>
+            )}
+            {filtered.map(p => {
+              const open = openCode === p.product_code;
+              return (
+                <React.Fragment key={p.product_code}>
+                  <tr className={open ? 'open' : ''}>
+                    <td className="code">{p.product_code}</td>
+                    <td>
+                      <button type="button" className="namebtn" aria-expanded={open}
+                        onClick={() => setOpenCode(open ? null : p.product_code)}>{p.name}</button>
+                    </td>
+                    <td className="num">{won(p.price_krw)}</td>
+                    <td>{sizeText(p)}{p.pack_info ? ` (${p.pack_info})` : ''}</td>
+                    <td><Val v={p.origin} /></td>
+                    <td><AllergyBadges p={p} /></td>
+                    <td><button type="button" className="btn sm" onClick={() => setDeleting(p)} aria-label={`${p.name} 삭제`}>삭제</button></td>
+                  </tr>
+                  {open && <tr className="detail"><td colSpan="7"><Detail p={p} /></td></tr>}
+                </React.Fragment>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {adding && (
+        <Modal title="상품 추가" wide onClose={() => setAdding(false)}>
+          <AddForm existingCodes={(rows || []).map(r => r.product_code)} onSubmit={doAdd} onCancel={() => setAdding(false)} />
+        </Modal>
+      )}
+      {deleting && (
+        <Modal title="상품 삭제" backdropClose onClose={() => !delBusy && setDeleting(null)}>
+          <p><b>{deleting.name}</b> ({deleting.product_code})을 삭제할까요?<br />
+            보관조건 {(deleting.storage_conditions || []).length}건도 함께 삭제되며 되돌릴 수 없습니다.</p>
+          <div className="actions">
+            <button type="button" className="btn" onClick={() => setDeleting(null)} disabled={delBusy}>취소</button>
+            <button type="button" className="btn danger" onClick={doDelete} disabled={delBusy}>{delBusy ? '삭제 중…' : '삭제'}</button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
